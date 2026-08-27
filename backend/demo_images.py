@@ -5,9 +5,9 @@ Real photos are better -- drop your own into sample_data/ and the seed script
 will use those instead. These exist so a fresh clone has thumbnails on the map
 and a believable before/after pair, with no binary files in the repo.
 """
-from pathlib import Path
+import io
 
-from config import IMAGE_DIR
+import storage
 
 PALETTE = {
     "pothole": ((72, 72, 78), (28, 28, 32)),
@@ -19,7 +19,7 @@ SIZE = (480, 320)
 
 
 def make_image(kind: str, label: str, filename: str) -> str:
-    """Render a labelled placeholder into the image store; return its filename."""
+    """Render a labelled placeholder into the image store; return its URL."""
     from PIL import Image, ImageDraw
 
     road, blemish = PALETTE.get(kind, PALETTE["clean"])
@@ -44,16 +44,11 @@ def make_image(kind: str, label: str, filename: str) -> str:
     draw.rectangle([0, 0, SIZE[0], 34], fill=(18, 18, 20))
     draw.text((12, 11), label[:56], fill=(235, 235, 235))
 
-    path = IMAGE_DIR / filename
-    img.save(path, "JPEG", quality=82)
-    return path.name
+    buffer = io.BytesIO()
+    img.save(buffer, "JPEG", quality=82)
+    return storage.save_image(buffer.getvalue(), filename)
 
 
 def cleanup() -> int:
-    """Delete every stored image. Returns how many were removed."""
-    removed = 0
-    for path in Path(IMAGE_DIR).glob("*"):
-        if path.is_file():
-            path.unlink()
-            removed += 1
-    return removed
+    """Delete locally stored images. Returns how many were removed."""
+    return storage.clear_local_images()

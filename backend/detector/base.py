@@ -1,6 +1,5 @@
 """The detector contract. Implement this to plug in your own model."""
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Protocol
 
 
@@ -15,9 +14,15 @@ class Detection:
 
 
 class Detector(Protocol):
-    """Anything that can turn an image into a list of Detections."""
+    """Anything that can turn an image into a list of Detections.
+
+    Detectors receive the image *bytes*, not a path: on a serverless host
+    there is no local file to read, since uploads go straight to blob
+    storage. `filename` is passed along only because the mock detector
+    reads demo hints from it.
+    """
 
     name: str
 
-    def detect(self, image_path: Path) -> list[Detection]:
+    def detect(self, data: bytes, filename: str = "") -> list[Detection]:
         ...

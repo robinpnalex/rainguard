@@ -14,7 +14,7 @@ So the API accepts explicit coordinates (the dashboard sets them by clicking
 the map), falls back to EXIF, and treats browser geolocation as a bonus.
 A real field app needs manual correction for poor signal anyway.
 """
-from pathlib import Path
+import io
 
 SOURCE_MANUAL = "manual"
 SOURCE_EXIF = "exif"
@@ -25,7 +25,7 @@ SOURCE_SEED = "seed"
 def resolve(
     latitude: float | None,
     longitude: float | None,
-    image_path: Path | None,
+    image_data: bytes | None,
     declared_source: str | None = None,
 ) -> tuple[float, float, str] | None:
     """Return (lat, lon, source), or None if no location could be determined."""
@@ -35,15 +35,15 @@ def resolve(
         ) else SOURCE_MANUAL
         return latitude, longitude, source
 
-    if image_path is not None:
-        exif = read_exif_location(image_path)
+    if image_data:
+        exif = read_exif_location(image_data)
         if exif is not None:
             return exif[0], exif[1], SOURCE_EXIF
 
     return None
 
 
-def read_exif_location(image_path: Path) -> tuple[float, float] | None:
+def read_exif_location(image_data: bytes) -> tuple[float, float] | None:
     """Pull GPS coordinates out of a photo's EXIF, if they survived upload."""
     try:
         from PIL import Image, ExifTags
@@ -51,7 +51,7 @@ def read_exif_location(image_path: Path) -> tuple[float, float] | None:
         return None
 
     try:
-        with Image.open(image_path) as img:
+        with Image.open(io.BytesIO(image_data)) as img:
             exif = img.getexif()
             if not exif:
                 return None
