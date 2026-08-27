@@ -1,0 +1,18 @@
+# Core prototype dependencies. Install with:
+#   pip install -r requirements.txt
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+sqlalchemy==2.0.36
+pydantic==2.10.4
+python-multipart==0.0.20
+pillow==11.1.0
+
+# Optional: real YOLO detection. Large download (~2 GB with torch).
+# Only needed when DETECTOR_MODE = "yolo" in config.py
+# ultralytics==8.3.55
+
+# Optional: safe routing demo. See routing.py and download_graph.py.
+# scikit-learn is required by osmnx to snap points to an unprojected graph.
+# osmnx==2.0.7
+# networkx==3.4.2
+# scikit-learn==1.7.2

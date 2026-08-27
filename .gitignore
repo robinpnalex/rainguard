@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# RainGuard runtime state -- regenerate with /demo/seed
+backend/storage/*.db
+backend/storage/images/*
+!backend/storage/images/.gitkeep
+
+# Node
+node_modules/
+dist/
+
+# Cached OSM street network (~10 MB). Regenerate with download_graph.py
+model/*.graphml
+
+# Model weights
+model/*.pt
+
+.DS_Store
+
+# osmnx HTTP cache
+backend/cache/
