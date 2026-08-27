@@ -9,7 +9,7 @@ shortest path; routing on `safe_cost` gives a path that will detour around a
 bad stretch of road if the detour is short enough to be worth it.
 
 This module is deliberately isolated. If osmnx/networkx are not installed the
-rest of RainGuard runs exactly as before -- the /route endpoints just report
+rest of NIRVANA runs exactly as before -- the /route endpoints just report
 that routing is unavailable.
 
 First call downloads the Manipal street network from OpenStreetMap and caches

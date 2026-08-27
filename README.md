@@ -1,8 +1,8 @@
-# RainGuard
+# NIRVANA
 
 **AI-assisted road hazard monitoring for Manipal.** Smart India Hackathon 2026 prototype.
 
-RainGuard turns scattered road photos into a live, de-duplicated hazard map —
+NIRVANA turns scattered road photos into a live, de-duplicated hazard map —
 and, crucially, closes the loop: a hazard is not "fixed" because someone
 clicked a button, but because later observations prove it.
 
@@ -76,7 +76,7 @@ dashboard             (osmnx + networkx, optional)
 ```
 
 ```
-rainguard/
+nirvana/
   backend/      FastAPI, SQLite, detection, dedup, severity, routing
   frontend/     React + Vite + Leaflet dashboard
   model/        YOLO weights + cached OSM street graph (both gitignored)
@@ -181,7 +181,7 @@ reasons, and they compound:
 3. Uploaded photos usually have their **EXIF GPS stripped** (iOS strips it by
    default; anything sent through WhatsApp has none).
 
-So RainGuard resolves location from three sources, in priority order:
+So NIRVANA resolves location from three sources, in priority order:
 
 1. **Explicit coordinates** — click the map in the dashboard. This is the
    default demo path and it always works.
@@ -201,12 +201,12 @@ you present. Treat it as a bonus, never the spine of the demo.
 
 ## Plugging in a custom YOLO model
 
-An off-the-shelf YOLO model detects **none** of RainGuard's classes — COCO has
+An off-the-shelf YOLO model detects **none** of NIRVANA's classes — COCO has
 no pothole, manhole or waterlogging class. You need trained weights.
 
 ```bash
 pip install ultralytics
-cp your_trained_weights.pt model/rainguard.pt
+cp your_trained_weights.pt model/nirvana.pt
 ```
 
 Then set `DETECTOR_MODE = "yolo"` in `backend/config.py`. If your class names
@@ -299,7 +299,7 @@ Then do it once more.** (40 s)
 > "Two more people photograph the *same* pothole. Notice we do **not** get
 > extra markers — each merges as another observation, the severity rises, and
 > on the third sighting it becomes CONFIRMED. This is the difference between
-> RainGuard and a complaint inbox: 40 reports of one pothole is one hazard,
+> NIRVANA and a complaint inbox: 40 reports of one pothole is one hazard,
 > not 40 tickets."
 
 **4. With that hazard selected → "Mark as repaired".** (20 s)

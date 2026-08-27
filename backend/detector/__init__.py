@@ -36,7 +36,7 @@ def _build(mode: str) -> Detector:
         try:
             return YoloDetector()
         except Exception as exc:  # pragma: no cover - demo safety net
-            print(f"[rainguard] YOLO unavailable ({exc}); falling back to mock.")
+            print(f"[nirvana] YOLO unavailable ({exc}); falling back to mock.")
             return MockDetector()
     return MockDetector()
 

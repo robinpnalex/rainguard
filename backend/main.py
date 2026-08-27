@@ -1,5 +1,5 @@
 """
-RainGuard API.
+NIRVANA API.
 
 Thin HTTP layer. The interesting logic lives in hazard_service.py,
 dedup.py, severity.py and detector/.
@@ -32,7 +32,7 @@ from detector import get_detector
 from models import HAZARD_TYPES, STATUS_VERIFIED, Hazard
 
 app = FastAPI(
-    title="RainGuard",
+    title="NIRVANA",
     description="AI-assisted road hazard monitoring for Manipal.",
     version="0.1.0",
 )

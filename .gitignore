@@ -4,7 +4,7 @@ __pycache__/
 .venv/
 venv/
 
-# RainGuard runtime state -- regenerate with /demo/seed
+# NIRVANA runtime state -- regenerate with /demo/seed
 backend/storage/*.db
 backend/storage/images/*
 !backend/storage/images/.gitkeep

@@ -6,9 +6,9 @@ To use your own fine-tuned model:
   1. Train a YOLO model on pothole / manhole / waterlogging images
      (Roboflow Universe has ready-made datasets, and several pretrained
      pothole models you can download directly).
-  2. Drop the weights at  model/rainguard.pt
+  2. Drop the weights at  model/nirvana.pt
   3. Set DETECTOR_MODE = "yolo" in backend/config.py
-  4. Map your model's class names onto RainGuard's three types in
+  4. Map your model's class names onto NIRVANA's three types in
      CLASS_NAME_MAP below.
 
 Nothing else in the application changes -- this class satisfies the same
@@ -19,7 +19,7 @@ from pathlib import Path
 from config import YOLO_CONFIDENCE_THRESHOLD, YOLO_WEIGHTS_PATH
 from detector.base import Detection
 
-# Your model's class names (lower-cased) -> RainGuard hazard types.
+# Your model's class names (lower-cased) -> NIRVANA hazard types.
 # Extend this when your label set differs.
 CLASS_NAME_MAP = {
     "pothole": "pothole",

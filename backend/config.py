@@ -1,5 +1,5 @@
 """
-Central tuning knobs for the RainGuard prototype.
+Central tuning knobs for the NIRVANA prototype.
 
 Everything a demo operator might want to change lives here, so students can
 tweak behaviour without hunting through the code.
@@ -9,7 +9,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 STORAGE_DIR = BASE_DIR / "storage"
 IMAGE_DIR = STORAGE_DIR / "images"
-DATABASE_URL = f"sqlite:///{STORAGE_DIR / 'rainguard.db'}"
+DATABASE_URL = f"sqlite:///{STORAGE_DIR / 'nirvana.db'}"
 
 # --- Hazard deduplication -------------------------------------------------
 # Two detections of the same type within this many metres are treated as the
@@ -30,7 +30,7 @@ CLEAN_OBSERVATIONS_FOR_VERIFIED = 3
 # "mock" -> deterministic fake detector, no ML dependencies required.
 # "yolo" -> Ultralytics YOLO, see detector/yolo_detector.py
 DETECTOR_MODE = "mock"
-YOLO_WEIGHTS_PATH = BASE_DIR.parent / "model" / "rainguard.pt"
+YOLO_WEIGHTS_PATH = BASE_DIR.parent / "model" / "nirvana.pt"
 YOLO_CONFIDENCE_THRESHOLD = 0.35
 
 # --- Map ------------------------------------------------------------------

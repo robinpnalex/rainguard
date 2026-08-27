@@ -2,13 +2,13 @@
 
 ## Using the demo (no model needed)
 
-RainGuard ships with a **mock detector** and runs end to end without any
+NIRVANA ships with a **mock detector** and runs end to end without any
 machine-learning dependencies. This is the default (`DETECTOR_MODE = "mock"`
 in `backend/config.py`) and it is what you should use while building.
 
 ## Plugging in a real YOLO model
 
-An off-the-shelf YOLO model **cannot** detect any of RainGuard's classes --
+An off-the-shelf YOLO model **cannot** detect any of NIRVANA's classes --
 the COCO classes it ships with are people, cars, animals and furniture. You
 need weights trained on road damage.
 
@@ -21,13 +21,13 @@ Two realistic options:
 
    ```bash
    pip install ultralytics
-   yolo detect train data=rainguard.yaml model=yolo11n.pt epochs=60 imgsz=640
+   yolo detect train data=nirvana.yaml model=yolo11n.pt epochs=60 imgsz=640
    ```
 
 Then:
 
 ```bash
-cp runs/detect/train/weights/best.pt model/rainguard.pt
+cp runs/detect/train/weights/best.pt model/nirvana.pt
 pip install ultralytics
 ```
 

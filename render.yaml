@@ -1,4 +1,4 @@
-# Render blueprint for the RainGuard API.
+# Render blueprint for the NIRVANA API.
 #
 # Deploy: push this repo to GitHub, then on https://dashboard.render.com
 # choose "New +" -> "Blueprint" and point it at the repo. Render reads this

@@ -87,9 +87,9 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <span className="logo">RG</span>
+          <span className="logo">NV</span>
           <div>
-            <h1>RainGuard</h1>
+            <h1>NIRVANA</h1>
             <p>AI-assisted road hazard monitoring &mdash; Manipal</p>
           </div>
         </div>

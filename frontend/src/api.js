@@ -1,4 +1,4 @@
-// Every call to the RainGuard backend lives here.
+// Every call to the NIRVANA backend lives here.
 //
 // In development VITE_API_BASE is unset, so BASE is '/api' and the Vite dev
 // proxy forwards to localhost:8000 (see vite.config.js). In production the
