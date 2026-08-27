@@ -1,5 +1,22 @@
 // Every call to the RainGuard backend lives here.
-const BASE = '/api'
+//
+// In development VITE_API_BASE is unset, so BASE is '/api' and the Vite dev
+// proxy forwards to localhost:8000 (see vite.config.js). In production the
+// dashboard and the API are on different hosts, so VITE_API_BASE holds the
+// backend's full origin, e.g. https://rainguard-api.onrender.com
+export const API_ORIGIN = import.meta.env.VITE_API_BASE ?? ''
+const BASE = API_ORIGIN || '/api'
+
+/**
+ * Absolute URL for an image the API returned.
+ *
+ * The backend hands back site-relative paths like `/images/abc.jpg`, which
+ * only resolve against the dashboard's own origin. Split across two hosts
+ * they have to be prefixed with the API origin or every photo 404s.
+ */
+export function assetUrl(path) {
+  return path ? API_ORIGIN + path : null
+}
 
 async function request(path, options = {}) {
   const response = await fetch(BASE + path, options)

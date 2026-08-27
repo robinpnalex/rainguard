@@ -347,6 +347,66 @@ instant. Reach for PostGIS when the data outgrows it, not before.
 
 ---
 
+## Deploying (dashboard on Vercel, API on Render)
+
+The dashboard is a static build and goes on Vercel happily. The API is **not**
+deployed to Vercel, on purpose: it writes to a SQLite file and stores uploaded
+images on disk, and Vercel Functions have an ephemeral filesystem, so both
+would silently vanish between requests. Render gives it a normal disk and the
+existing code runs unchanged.
+
+### 1. API on Render
+
+Push the repo to GitHub, then at <https://dashboard.render.com> choose
+**New + → Blueprint** and select it. Render reads `render.yaml` and builds
+`backend/` with no further configuration. Copy the resulting URL, e.g.
+`https://rainguard-api.onrender.com`, and check `/health` responds.
+
+**On the free plan the filesystem is ephemeral** — the database and uploaded
+images are wiped when the service restarts or wakes from sleep. That is fine
+for a demo: click **Seed demo data** and the map repopulates in a second. Add
+a paid persistent disk mounted at `backend/storage` if you need it to survive.
+
+Free instances also sleep after inactivity and take ~50 s to wake. **Load the
+dashboard a few minutes before you present** so the API is warm.
+
+### 2. Dashboard on Vercel
+
+```bash
+npm i -g vercel
+cd frontend && vercel
+```
+
+Then set the API origin — without it the dashboard has no backend to call:
+
+```bash
+vercel env add VITE_API_BASE production   # paste your Render URL, no trailing slash
+vercel --prod
+```
+
+Or set it under **Project → Settings → Environment Variables**. `VITE_API_BASE`
+is read at *build* time, so redeploy after changing it.
+
+### How the two modes differ
+
+| | Local development | Deployed |
+|---|---|---|
+| `VITE_API_BASE` | unset | the Render URL |
+| API calls | `/api/...` via the Vite dev proxy | absolute, to Render |
+| Images | `/images/...` via the same proxy | absolute, via `assetUrl()` |
+| CORS | not involved (one origin) | handled by `CORSMiddleware` |
+
+Both paths are exercised by the same code in `src/api.js`; nothing is
+dev-only except the proxy in `vite.config.js`.
+
+### Routing in production
+
+The safe-routing module stays **off** when deployed. Its dependencies
+(osmnx, geopandas, scikit-learn) and the 10 MB street graph would blow past a
+free instance's build time and memory. The panel detects this and explains
+itself rather than erroring. Routing still works locally, which is where you
+will demo it.
+
 ## Development notes
 
 Built in the order: data model → API → dedup → severity → mock detection →

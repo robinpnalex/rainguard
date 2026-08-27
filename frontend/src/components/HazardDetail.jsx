@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { api } from '../api'
+import { api, assetUrl } from '../api'
 import { formatDate, hazardColour, HAZARD_LABELS, STATUS_LABELS } from '../constants'
 
 export default function HazardDetail({ hazard, onChanged, onClose }) {
@@ -70,12 +70,12 @@ export default function HazardDetail({ hazard, onChanged, onClose }) {
       {(hazard.before_image_url || hazard.after_image_url) && (
         <div className="before-after">
           <figure>
-            <img src={hazard.before_image_url ?? ''} alt="Hazard as detected" />
+            <img src={assetUrl(hazard.before_image_url) ?? ''} alt="Hazard as detected" />
             <figcaption>Before &mdash; hazard detected</figcaption>
           </figure>
           <figure>
             {hazard.after_image_url ? (
-              <img src={hazard.after_image_url} alt="After repair" />
+              <img src={assetUrl(hazard.after_image_url)} alt="After repair" />
             ) : (
               <div className="thumb placeholder">No re-inspection yet</div>
             )}

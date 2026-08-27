@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { api } from '../api'
+import { api, assetUrl } from '../api'
 import { HAZARD_LABELS } from '../constants'
 
 /**
@@ -136,7 +136,7 @@ export default function ReportForm({ pendingLocation, onClearLocation, onSubmitt
             Detector: {result.detector} &middot; location from {result.location_source}
           </p>
           {result.image_url && (
-            <img className="thumb" src={result.image_url} alt="Submitted road" />
+            <img className="thumb" src={assetUrl(result.image_url)} alt="Submitted road" />
           )}
         </div>
       )}

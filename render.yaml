@@ -1,0 +1,23 @@
+# Render blueprint for the RainGuard API.
+#
+# Deploy: push this repo to GitHub, then on https://dashboard.render.com
+# choose "New +" -> "Blueprint" and point it at the repo. Render reads this
+# file and provisions the service.
+#
+# The free plan runs on an ephemeral filesystem: the SQLite database and any
+# uploaded images are wiped when the service restarts or wakes from sleep.
+# For a demo that is fine -- click "Seed demo data" in the dashboard and the
+# map is repopulated in a second. Add a paid persistent disk mounted at
+# backend/storage if you need the data to survive.
+services:
+  - type: web
+    name: rainguard-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
