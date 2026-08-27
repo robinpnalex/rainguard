@@ -18,6 +18,7 @@ How it decides what is in an image:
    type and confidence from the digest.
 """
 import hashlib
+from pathlib import Path
 
 from detector.base import Detection
 
@@ -41,30 +42,34 @@ CYCLE = ("pothole", "manhole", "waterlogging")
 class MockDetector:
     name = "mock"
 
-    def detect(self, data: bytes, filename: str = "") -> list[Detection]:
-        filename = filename.lower()
+    def detect(self, image_path: Path) -> list[Detection]:
+        filename = image_path.name.lower()
 
         if any(hint in filename for hint in CLEAN_HINTS):
             return []
 
         for hint, hazard_type in TYPE_HINTS.items():
             if hint in filename:
-                return [Detection(hazard_type, self._confidence(data, 0.78, 0.97))]
+                return [Detection(hazard_type, self._confidence(image_path, 0.78, 0.97))]
 
-        digest = self._digest(data)
+        digest = self._digest(image_path)
         # 1 image in 8 is "clean" so the mock is not implausibly eager.
         if digest[0] % 8 == 0:
             return []
 
         hazard_type = CYCLE[digest[1] % len(CYCLE)]
-        return [Detection(hazard_type, self._confidence(data, 0.55, 0.95))]
+        return [Detection(hazard_type, self._confidence(image_path, 0.55, 0.95))]
 
     # -- internals ---------------------------------------------------------
 
-    def _digest(self, data: bytes) -> bytes:
-        return hashlib.sha256(data or b"empty").digest()
+    def _digest(self, image_path: Path) -> bytes:
+        try:
+            data = image_path.read_bytes()
+        except OSError:
+            data = image_path.name.encode()
+        return hashlib.sha256(data).digest()
 
-    def _confidence(self, data: bytes, low: float, high: float) -> float:
+    def _confidence(self, image_path: Path, low: float, high: float) -> float:
         # Map digest byte -> [low, high], stable across runs.
-        fraction = self._digest(data)[2] / 255.0
+        fraction = self._digest(image_path)[2] / 255.0
         return round(low + (high - low) * fraction, 2)

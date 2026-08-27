@@ -8,17 +8,14 @@ export const API_ORIGIN = import.meta.env.VITE_API_BASE ?? ''
 const BASE = API_ORIGIN || '/api'
 
 /**
- * Browser-loadable URL for an image the API returned.
+ * Absolute URL for an image the API returned.
  *
- * Three cases:
- *   - Vercel Blob gives an absolute https:// URL -> use it unchanged
- *   - local disk gives `/images/abc.jpg` -> resolve against the API origin
- *     (empty in same-origin deployments, so it stays relative)
+ * The backend hands back site-relative paths like `/images/abc.jpg`, which
+ * only resolve against the dashboard's own origin. Split across two hosts
+ * they have to be prefixed with the API origin or every photo 404s.
  */
 export function assetUrl(path) {
-  if (!path) return null
-  if (path.startsWith('http://') || path.startsWith('https://')) return path
-  return API_ORIGIN + path
+  return path ? API_ORIGIN + path : null
 }
 
 async function request(path, options = {}) {

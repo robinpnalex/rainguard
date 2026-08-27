@@ -4,11 +4,11 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from config import DATABASE_URL
 
-# check_same_thread is a SQLite-only flag; Postgres rejects it.
-_connect_args = (
-    {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+engine = create_engine(
+    DATABASE_URL,
+    # SQLite + FastAPI's threadpool need this; harmless for a prototype.
+    connect_args={"check_same_thread": False},
 )
-engine = create_engine(DATABASE_URL, connect_args=_connect_args, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 

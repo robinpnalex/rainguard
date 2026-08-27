@@ -347,80 +347,65 @@ instant. Reach for PostGIS when the data outgrows it, not before.
 
 ---
 
-## Deploying to Vercel
+## Deploying (dashboard on Vercel, API on Render)
 
-Everything runs in one Vercel project: the dashboard as static files, the
-FastAPI backend as a Python function under `/api`.
+The dashboard is a static build and goes on Vercel happily. The API is **not**
+deployed to Vercel, on purpose: it writes to a SQLite file and stores uploaded
+images on disk, and Vercel Functions have an ephemeral filesystem, so both
+would silently vanish between requests. Render gives it a normal disk and the
+existing code runs unchanged.
 
-Because Vercel Functions have an ephemeral filesystem, the two things that
-wrote to disk are swapped for managed services. Both are picked up from
-environment variables, so **local development is unchanged** -- with neither
-variable set the app still uses SQLite and local image files.
+### 1. API on Render
 
-| | Local | Vercel |
-|---|---|---|
-| Database | SQLite file | Neon Postgres (`DATABASE_URL`) |
-| Images | `backend/storage/images/` | Vercel Blob (`BLOB_READ_WRITE_TOKEN`) |
-| API URL | `localhost:8000` via dev proxy | same-origin `/api` |
+Push the repo to GitHub, then at <https://dashboard.render.com> choose
+**New + → Blueprint** and select it. Render reads `render.yaml` and builds
+`backend/` with no further configuration. Copy the resulting URL, e.g.
+`https://rainguard-api.onrender.com`, and check `/health` responds.
 
-### Steps
+**On the free plan the filesystem is ephemeral** — the database and uploaded
+images are wiped when the service restarts or wakes from sleep. That is fine
+for a demo: click **Seed demo data** and the map repopulates in a second. Add
+a paid persistent disk mounted at `backend/storage` if you need it to survive.
+
+Free instances also sleep after inactivity and take ~50 s to wake. **Load the
+dashboard a few minutes before you present** so the API is warm.
+
+### 2. Dashboard on Vercel
 
 ```bash
 npm i -g vercel
-cd rainguard        # repo root, where vercel.json lives
-vercel link
+cd frontend && vercel
 ```
 
-**1. Provision Postgres** — sets `DATABASE_URL` automatically:
+Then set the API origin — without it the dashboard has no backend to call:
 
 ```bash
-vercel integration add neon
-```
-
-**2. Provision Blob storage.** In the Vercel dashboard: **Storage → Create →
-Blob**, connect it to this project. That sets `BLOB_READ_WRITE_TOKEN`.
-
-**3. Deploy:**
-
-```bash
+vercel env add VITE_API_BASE production   # paste your Render URL, no trailing slash
 vercel --prod
 ```
 
-Then open `/api/health` on the deployed URL. It reports which stores are
-live:
+Or set it under **Project → Settings → Environment Variables**. `VITE_API_BASE`
+is read at *build* time, so redeploy after changing it.
 
-```json
-{ "status": "ok", "image_storage": "vercel-blob", "database": "postgres" }
-```
+### How the two modes differ
 
-If it says `local-disk` or `sqlite`, an environment variable is missing --
-data will vanish between requests until you fix it and redeploy.
+| | Local development | Deployed |
+|---|---|---|
+| `VITE_API_BASE` | unset | the Render URL |
+| API calls | `/api/...` via the Vite dev proxy | absolute, to Render |
+| Images | `/images/...` via the same proxy | absolute, via `assetUrl()` |
+| CORS | not involved (one origin) | handled by `CORSMiddleware` |
 
-Finally, click **Seed demo data** once to populate the Postgres database.
-
-### What changed to make this work
-
-- `storage.py` — new. Uploads go to Vercel Blob when a token is present,
-  local disk otherwise. Callers only ever see a URL.
-- `Detector.detect()` takes image **bytes**, not a path. There is no local
-  file to read on a serverless host.
-- `config.py` reads `DATABASE_URL`, normalising Neon's `postgres://` prefix
-  to the `postgresql+psycopg://` form SQLAlchemy expects.
-- `api/index.py` — the Vercel entry point. It mounts the app from
-  `backend/main.py` under `/api`.
+Both paths are exercised by the same code in `src/api.js`; nothing is
+dev-only except the proxy in `vite.config.js`.
 
 ### Routing in production
 
-The safe-routing module stays **off** when deployed: osmnx, geopandas and a
-10 MB street graph would blow past the function size and cold-start budget.
-The panel detects this and explains itself rather than erroring. Routing
-still works locally, which is where you will demo it.
-
-### Alternative: API on Render
-
-`render.yaml` is still in the repo. It deploys `backend/` to Render, where a
-normal filesystem means SQLite and local images work with no Postgres or Blob
-at all. Point the dashboard at it with `VITE_API_BASE`.
+The safe-routing module stays **off** when deployed. Its dependencies
+(osmnx, geopandas, scikit-learn) and the 10 MB street graph would blow past a
+free instance's build time and memory. The panel detects this and explains
+itself rather than erroring. Routing still works locally, which is where you
+will demo it.
 
 ## Development notes
 

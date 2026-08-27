@@ -4,7 +4,10 @@ RainGuard API.
 Thin HTTP layer. The interesting logic lives in hazard_service.py,
 dedup.py, severity.py and detector/.
 """
+import shutil
+import uuid
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,10 +19,8 @@ import demo
 import hazard_service
 import location as location_module
 import schemas
-import storage
 from config import (
     CLEAN_OBSERVATIONS_FOR_VERIFIED,
-    DATABASE_URL,
     DEDUP_RADIUS_METRES,
     IMAGE_DIR,
     MANIPAL_CENTRE,
@@ -45,10 +46,7 @@ app.add_middleware(
 )
 
 app.include_router(demo.router)
-# Served locally only: in production images live in Vercel Blob and the API
-# hands back absolute blob URLs instead.
-if not storage.using_blob():
-    app.mount("/images", StaticFiles(directory=IMAGE_DIR), name="images")
+app.mount("/images", StaticFiles(directory=IMAGE_DIR), name="images")
 
 
 @app.on_event("startup")
@@ -61,12 +59,7 @@ def _startup() -> None:
 # --------------------------------------------------------------------------
 
 def _image_url(path: str | None) -> str | None:
-    """Stored value is already a URL. Older local rows stored a bare filename."""
-    if not path:
-        return None
-    if path.startswith(("http://", "https://", "/")):
-        return path
-    return f"/images/{path}"
+    return f"/images/{path}" if path else None
 
 
 def _hazard_out(hazard: Hazard, detail: bool = False):
@@ -111,11 +104,16 @@ def _hazard_out(hazard: Hazard, detail: bool = False):
     return schemas.HazardDetailOut(**payload)
 
 
-def _read_upload(image: UploadFile | None) -> tuple[bytes, str] | None:
-    """Read an upload into memory. There is no disk to stream to on Vercel."""
+def _save_upload(image: UploadFile | None) -> Path | None:
     if image is None or not image.filename:
         return None
-    return image.file.read(), image.filename
+    # Keep the original name in the stored filename: the mock detector reads
+    # filename hints, and it makes the storage folder readable during a demo.
+    safe_name = Path(image.filename).name.replace(" ", "_")
+    stored = IMAGE_DIR / f"{uuid.uuid4().hex[:8]}_{safe_name}"
+    with stored.open("wb") as fh:
+        shutil.copyfileobj(image.file, fh)
+    return stored
 
 
 def _get_hazard_or_404(db: Session, hazard_id: int) -> Hazard:
@@ -134,8 +132,6 @@ def health():
     return {
         "status": "ok",
         "detector": get_detector().name,
-        "image_storage": storage.backend_name(),
-        "database": "postgres" if not DATABASE_URL.startswith("sqlite") else "sqlite",
         "dedup_radius_metres": DEDUP_RADIUS_METRES,
         "observations_for_confirmed": OBSERVATIONS_FOR_CONFIRMED,
         "clean_observations_for_verified": CLEAN_OBSERVATIONS_FOR_VERIFIED,
@@ -197,11 +193,12 @@ def create_detection(
     `hazard_type` + `confidence` bypass the detector entirely. That is how the
     seed script and the demo replay stay deterministic.
     """
-    upload = _read_upload(image)
-    data, original_name = upload if upload else (None, None)
+    stored_path = _save_upload(image)
 
-    resolved = location_module.resolve(latitude, longitude, data, location_source)
+    resolved = location_module.resolve(latitude, longitude, stored_path, location_source)
     if resolved is None:
+        if stored_path:
+            stored_path.unlink(missing_ok=True)
         raise HTTPException(
             status_code=422,
             detail=(
@@ -221,20 +218,15 @@ def create_detection(
         found = [(hazard_type, confidence if confidence is not None else 0.9)]
         detector_name = "manual"
     else:
-        if data is None:
+        if stored_path is None:
             raise HTTPException(
                 status_code=422,
                 detail="Provide an image to run detection on, or an explicit hazard_type.",
             )
-        found = [(d.type, d.confidence) for d in detector.detect(data, original_name)]
+        found = [(d.type, d.confidence) for d in detector.detect(stored_path)]
         detector_name = detector.name
 
-    # Only store the image once we know the request is valid.
-    image_name = (
-        storage.save_image(data, original_name, image.content_type or "image/jpeg")
-        if data is not None
-        else None
-    )
+    image_name = stored_path.name if stored_path else None
     created, updated, hazards = [], [], []
 
     for found_type, found_conf in found:
@@ -345,19 +337,18 @@ def verify_repair(
     if hazard.status == STATUS_VERIFIED:
         raise HTTPException(status_code=409, detail="Hazard is already verified.")
 
-    upload = _read_upload(image)
-    data, original_name = upload if upload else (None, None)
+    stored_path = _save_upload(image)
 
     # Fall back to the hazard's own coordinates: the inspector is standing at
     # a known hazard, so we do not need a fresh fix to proceed.
-    resolved = location_module.resolve(latitude, longitude, data, location_source)
+    resolved = location_module.resolve(latitude, longitude, stored_path, location_source)
     lat, lon, source = resolved or (hazard.latitude, hazard.longitude, "manual")
 
     if simulate in ("clean", "still_there"):
         still_detected = simulate == "still_there"
         confidence = 0.88
-    elif data is not None:
-        detections = get_detector().detect(data, original_name)
+    elif stored_path is not None:
+        detections = get_detector().detect(stored_path)
         match = next((d for d in detections if d.type == hazard.type), None)
         still_detected = match is not None
         confidence = match.confidence if match else 0.0
@@ -367,11 +358,7 @@ def verify_repair(
             detail="Upload a re-inspection photo, or pass simulate=clean|still_there.",
         )
 
-    image_name = (
-        storage.save_image(data, original_name, image.content_type or "image/jpeg")
-        if data is not None
-        else None
-    )
+    image_name = stored_path.name if stored_path else None
 
     if still_detected:
         hazard, _ = hazard_service.record_detection(

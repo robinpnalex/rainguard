@@ -49,14 +49,9 @@ class YoloDetector:
             )
         self.model = YOLO(str(self.weights))
 
-    def detect(self, data: bytes, filename: str = "") -> list[Detection]:
-        import io
-
-        from PIL import Image
-
-        image = Image.open(io.BytesIO(data)).convert("RGB")
+    def detect(self, image_path: Path) -> list[Detection]:
         results = self.model.predict(
-            source=image,
+            source=str(image_path),
             conf=YOLO_CONFIDENCE_THRESHOLD,
             verbose=False,
         )
