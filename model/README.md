@@ -6,41 +6,73 @@ NIRVANA ships with a **mock detector** and runs end to end without any
 machine-learning dependencies. This is the default (`DETECTOR_MODE = "mock"`
 in `backend/config.py`) and it is what you should use while building.
 
-## Plugging in a real YOLO model
+## Training a real pothole detector
 
-An off-the-shelf YOLO model **cannot** detect any of NIRVANA's classes --
-the COCO classes it ships with are people, cars, animals and furniture. You
-need weights trained on road damage.
+`train.py` fine-tunes YOLOv8-nano and installs the weights for you.
 
-Two realistic options:
+### Step 1 — get a dataset
 
-1. **Download pretrained pothole weights.** Roboflow Universe hosts several
-   pothole / road-damage YOLO models you can export directly as `.pt`.
-2. **Fine-tune your own.** Grab a road-damage dataset (Roboflow Universe,
-   RDD2022), label the three classes, and train:
+Go to [Roboflow Universe](https://universe.roboflow.com) and search
+`pothole`. Pick a dataset with a few thousand images. Open it, click
+**Download this Dataset -> YOLOv8**, and copy the URL from your address bar.
 
-   ```bash
-   pip install ultralytics
-   yolo detect train data=nirvana.yaml model=yolo11n.pt epochs=60 imgsz=640
-   ```
+Grab your free API key from <https://app.roboflow.com/settings/api>.
 
-Then:
+### Step 2 — train
 
-```bash
-cp runs/detect/train/weights/best.pt model/nirvana.pt
-pip install ultralytics
+Where you train matters more than anything else here.
+
+**Google Colab (recommended).** A free T4 finishes 60 epochs in well under an
+hour. Open a new notebook at <https://colab.research.google.com>, set
+Runtime -> Change runtime type -> **T4 GPU**, then:
+
+```python
+!pip install ultralytics roboflow
+!git clone https://github.com/robinpnalex/rainguard.git
+%cd rainguard
+!python model/train.py --roboflow-url "<URL>" --roboflow-key "<KEY>"
 ```
 
-and set `DETECTOR_MODE = "yolo"` in `backend/config.py`.
+Download `model/nirvana.pt` from the file browser when it finishes.
 
-If your model's class names differ from `pothole` / `manhole` /
-`waterlogging`, map them in `CLASS_NAME_MAP` at the top of
-`backend/detector/yolo_detector.py`. Nothing else in the application changes:
-`YoloDetector` satisfies the same `Detector` interface as the mock.
+**This laptop.** No CUDA GPU here (integrated Radeon), so training falls back
+to CPU and takes hours rather than minutes. It does work:
 
-If the weights file is missing or Ultralytics fails to load, the backend
-prints a warning and **falls back to mock mode** rather than crashing. That is
-deliberate -- a broken model should never take down a live demo.
+```bash
+pip install -r backend/requirements-yolo.txt
+python model/train.py --roboflow-url "<URL>" --roboflow-key "<KEY>" --epochs 40
+```
+
+Already have a dataset on disk? Skip Roboflow entirely:
+
+```bash
+python model/train.py --data path/to/data.yaml
+```
+
+### Step 3 — switch the app over
+
+The script copies the best weights to `model/nirvana.pt` and prints the class
+names it learned. Check those against `CLASS_NAME_MAP` at the top of
+`backend/detector/yolo_detector.py` — **a class that is not in that map is
+silently ignored**, which looks exactly like a model that detects nothing.
+
+Then set `DETECTOR_MODE = "yolo"` in `backend/config.py` and restart.
+
+### Things that will bite you
+
+- **`sample_data/` images are synthetic drawings**, not photographs. A real
+  model detects nothing in them. Once you switch to YOLO mode you need real
+  road photos — take them on your phone around Manipal, which also gives you
+  genuine EXIF GPS for the map.
+- **A pothole-only model never reports manholes or waterlogging.** Those
+  uploads return zero detections, which the backend treats as a *clean*
+  observation. That is correct behaviour for repair verification, but it means
+  two of your three hazard types quietly stop working. Either train all three
+  classes or keep the demo pothole-focused.
+- **The deployed API cannot run this.** Render's free tier has 512 MB of RAM;
+  torch plus YOLO inference does not fit. Keep the deployed instance in mock
+  mode and demo YOLO from a laptop, or move to a paid instance.
+- Weights are gitignored (`model/*.pt`). Copy `nirvana.pt` around by hand.
 
 ## Cached street network
 

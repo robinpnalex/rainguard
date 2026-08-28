@@ -23,3 +23,7 @@ model/*.pt
 
 # osmnx HTTP cache
 backend/cache/
+
+# Training artefacts from model/train.py
+model/runs/
+model/dataset/

@@ -1,0 +1,11 @@
+# Optional: real YOLO detection (DETECTOR_MODE = "yolo" in config.py).
+#
+#   pip install -r backend/requirements-yolo.txt
+#
+# Kept separate from requirements.txt because this pulls in torch -- roughly
+# 2 GB installed. The prototype runs fine without it in mock mode, and the
+# deployed API on Render's free tier does NOT have room for it.
+ultralytics==8.3.55
+
+# Only needed to download a dataset from Roboflow Universe in model/train.py.
+roboflow==1.1.49
